@@ -1,40 +1,41 @@
 #!/bin/bash
 
-# ฟังก์ชันในการรันการทดสอบ GPU
+# function for testing GPU
 start_gpu_test() {
-    python3 stress.py
+    python3 stress.py $TOTAL_DURATION &
+    echo $!
 }
 
-# สร้างไดเรกทอรีผลลัพธ์
+# Create dir
 OUTPUT_DIR=./output
 if [[ ! -d $OUTPUT_DIR ]]; then
     mkdir -p $OUTPUT_DIR
 fi
 
-# ระยะเวลาทั้งหมดที่ต้องการรันการทดสอบ (วินาที)
-TOTAL_TESTING_DURATION_TIME_IN_MINUTE=20
-TOTAL_DURATION=$((${TOTAL_TESTING_DURATION_TIME_IN_MINUTE} * 60))  # 15 นาที = 900 วินาที
-# ระยะเวลาการทดสอบในแต่ละรอบ (วินาที)
-TEST_DURATION=300  # 5 นาที = 300 วินาที
-# ระยะเวลาพักในแต่ละรอบ (วินาที)
-PAUSE_DURATION=60  # 1 นาที = 60 วินาที
+# in second
+TOTAL_DURATION=${1:-3600}
 
-# เวลาเริ่มต้น
+# starting time
 START_TIME=$(date +%s)
 
-# วนลูปการทดสอบและพักตามเวลาที่กำหนดจนครบ 15 นาที
+# begin testing GPU
+echo "Starting GPU stress test for a total duration of ${TOTAL_DURATION} seconds..."
+TEST_PID=$(start_gpu_test $TOTAL_DURATION)
+
+# Loop until the specified time is reached
 while true; do
     CURRENT_TIME=$(date +%s)
     ELAPSED_TIME=$((CURRENT_TIME - START_TIME))
 
     if [ $ELAPSED_TIME -ge $TOTAL_DURATION ]; then
-        echo "Completed the total duration of 15 minutes. Exiting..."
+        echo "Completed the total duration of ${TOTAL_DURATION} seconds. Exiting..."
         break
     fi
 
-    echo "Starting GPU stress test..."
-    start_gpu_test
+    if ! ps -p $TEST_PID > /dev/null; then
+        echo "Process $TEST_PID has stopped. Restarting the test..."
+        TEST_PID=$(start_gpu_test $TOTAL_DURATION)
+    fi
 
-    echo "Pausing for 1 minute before the next test..."
-    sleep $PAUSE_DURATION  # พัก 1 นาที
+    sleep 5
 done
