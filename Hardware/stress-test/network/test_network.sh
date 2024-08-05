@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Set the filename for the results
-RUNTIME="5"   # Duration of the test run (seconds)
+RUNTIME="3600"   # Duration of the test run (seconds)
 TIMESTAMP=$(date +%Y%m%d_%H%M%S) # Add timestamp to ensure unique results
 OUTPUT_DIR=./output
 OUTPUT_FILE=${TIMESTAMP}_$(uname -n | sed 's/[^a-zA-Z0-9]/-/g')"_network_test_result.txt"
@@ -12,9 +12,18 @@ SERVER_IP="speedtest.hkg12.hk.leaseweb.net"
 # Function to start the testing process
 start_iperf3() {
     # Test download (client sends data to the server)
-    iperf3 --client $SERVER_IP -p 5201-5210 --time $RUNTIME --reverse > $OUTPUT_DIR/download_$OUTPUT_FILE &
+    iperf3 --client $SERVER_IP -p 5201-5210 --time 60 --reverse > $OUTPUT_DIR/download_$OUTPUT_FILE &
+    local download_pid=$!
+    
+    # Wait for download to finish
+    wait $download_pid
+    
     # Test upload (client receives data from the server)
-    iperf3 --client $SERVER_IP -p 5201-5210 --time $RUNTIME > $OUTPUT_DIR/upload_$OUTPUT_FILE &
+    iperf3 --client $SERVER_IP -p 5201-5210 --time 60 > $OUTPUT_DIR/upload_$OUTPUT_FILE &
+    local upload_pid=$!
+    
+    # Wait for upload to finish
+    wait $upload_pid
 }
 
 create_output_dir() {
@@ -39,7 +48,6 @@ collect_results() {
 
 # Start the testing process
 create_output_dir
-start_iperf3
 
 # Convert RUNTIME to seconds
 RUNTIME_SECONDS=$(echo $RUNTIME | sed 's/s$//')
@@ -49,12 +57,8 @@ START_TIME=$(date +%s)
 
 # Loop to check if the `iperf3` process is killed and restart if necessary
 while true; do
-    # Check if the `iperf3` process is running
-    if ! pgrep -x "iperf3" > /dev/null; then
-        echo "iperf3 process stopped. Restarting..."
-        collect_results
-        start_iperf3
-    fi
+    # Start the iperf3 test
+    start_iperf3
 
     # Check the current time
     CURRENT_TIME=$(date +%s)
