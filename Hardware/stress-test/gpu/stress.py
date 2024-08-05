@@ -3,6 +3,9 @@ import time
 import socket
 from datetime import datetime
 import os
+import sys
+
+
 
 def get_gpu_memory_info():
     total_memory = []
@@ -96,5 +99,5 @@ def gpu_stress_test(duration_sec):
                   f"Average memory reserved: {avg_memory_reserved}, Average memory free: {avg_memory_free}")
 
 # duration time in second
-duration_sec = 60
+duration_sec = int(sys.argv[1])
 gpu_stress_test(duration_sec)
