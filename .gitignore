@@ -1,4 +1,5 @@
 !Hardware/stress-test/gpu/requirements.txt
+Hardware/*.csv
 **/*venv*
 **/output
 **/nohup.out
