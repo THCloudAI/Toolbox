@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Set the filename for the results
-RUNTIME="3600s"   # Duration of the test run
+RUNTIME=RUNTIME=${1:-3600s}   # Duration of the test run
 TARGET_DIR=${1:-.}  # Directory to run the test in, default is current directory
 TEST_FILE="$TARGET_DIR/testfile"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S) # Add timestamp to ensure unique results
