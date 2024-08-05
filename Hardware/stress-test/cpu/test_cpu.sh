@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Set the filename for the results
-RUNTIME="30"   # Duration of the test run
+RUNTIME=${1:-3600}   # Duration of the test run
 TIMESTAMP=$(date +%Y%m%d_%H%M%S) # Add timestamp to ensure unique results
 OUTPUT_DIR=./output
 OUTPUT_FILE=${TIMESTAMP}_$(uname -n | sed 's/[^a-zA-Z0-9]/-/g')"_cpu_test_result.txt"
