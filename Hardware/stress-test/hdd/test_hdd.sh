@@ -1,34 +1,34 @@
 #!/bin/bash
 
-# กำหนดชื่อไฟล์สำหรับผลลัพธ์
-RUNTIME="30s"   # ระยะเวลาการรันทดสอบ
-SIZE="1G"       # ขนาดไฟล์ที่ใช้ในการทดสอบ
+# Set the filename for the results
+RUNTIME="30s"   # Duration of the test run
+SIZE="1G"       # Size of the file used for testing
 TEST_FILE="./testfile"
-TIMESTAMP=$(date +%Y%m%d_%H%M%S) # เพิ่ม timestamp เพื่อเก็บผลลัพธ์ที่ไม่ซ้ำกัน
+TIMESTAMP=$(date +%Y%m%d_%H%M%S) # Add timestamp to ensure unique results
 OUTPUT_DIR=./output
-OUTPUT_FILE=${TIMESTAMP}_$(uname -n |sed 's/[^a-zA-Z0-9]/-/g')"_$(echo $TEST_FILE| sed 's/[(\/\.)\/\.]//g')_hdd_test_result.txt"
+OUTPUT_FILE=${TIMESTAMP}_$(uname -n | sed 's/[^a-zA-Z0-9]/-/g')"_$(echo $TEST_FILE | sed 's/[(\/\.)\/\.]//g')_hdd_test_result.txt"
 
-# ฟังก์ชันในการเริ่มกระบวนการทดสอบ
+# Function to start the testing process
 start_fio() {
-    # ทดสอบการเขียน
+    # Write test
     fio --name=write_test --filename=$TEST_FILE --size=$SIZE --time_based --runtime=$RUNTIME --ioengine=libaio --direct=1 --bs=4k --rw=write --output=$OUTPUT_DIR/write_$OUTPUT_FILE &
-    # FIO_WRITE_PID=$!  # เก็บ PID ของกระบวนการ `fio`
-    # ทดสอบการอ่าน
+    # FIO_WRITE_PID=$!  # Store the PID of the `fio` process
+    # Read test
     fio --name=read_test --filename=$TEST_FILE --size=$SIZE --time_based --runtime=$RUNTIME --ioengine=libaio --direct=1 --bs=4k --rw=read --output=$OUTPUT_DIR/read_$OUTPUT_FILE &
-    # FIO_READ_PID=$!  # เก็บ PID ของกระบวนการ `fio`
+    # FIO_READ_PID=$!  # Store the PID of the `fio` process
 }
 
 create_output_dir() {
-    if [[ ! -d $output ]]; then
-        mkdir -p ./output
+    if [[ ! -d $OUTPUT_DIR ]]; then
+        mkdir -p $OUTPUT_DIR
     fi
 }
 
-# ฟังก์ชันในการรวมผลลัพธ์
+# Function to collect the results
 collect_results() {
-    # สร้างชื่อไฟล์สำหรับผลลัพธ์ด้วย timestamp
+    # Create a filename for the final results with timestamp
     FINAL_OUTPUT_FILE="${OUTPUT_FILE%.*}.txt"
-    
+
     sudo df -h > $OUTPUT_DIR/$FINAL_OUTPUT_FILE
     sudo lsblk >> $OUTPUT_DIR/$FINAL_OUTPUT_FILE
     echo "Write Test Results:" >> $OUTPUT_DIR/$FINAL_OUTPUT_FILE
@@ -39,30 +39,30 @@ collect_results() {
     echo "Results saved to $OUTPUT_DIR/$FINAL_OUTPUT_FILE"
 }
 
-# เริ่มกระบวนการทดสอบ
+# Start the testing process
 create_output_dir
 start_fio
 
-# แปลงค่า RUNTIME เป็นวินาที
+# Convert RUNTIME to seconds
 RUNTIME_SECONDS=$(echo $RUNTIME | sed 's/s$//')
 
-# เวลาเริ่มต้น
+# Start time
 START_TIME=$(date +%s)
 
-# วนรอเพื่อดูว่ากระบวนการ `fio` ถูก kill หรือไม่ และเริ่มใหม่ถ้าจำเป็น
+# Loop to check if the `fio` process is killed and restart if necessary
 while true; do
-    # เช็คว่ามีการทำงานของ `fio` หรือไม่
+    # Check if the `fio` process is running
     if ! pgrep -x "fio" > /dev/null; then
         echo "fio process stopped. Restarting..."
         collect_results
         start_fio
     fi
 
-    # ตรวจสอบเวลาปัจจุบัน
+    # Check the current time
     CURRENT_TIME=$(date +%s)
     ELAPSED_TIME=$((CURRENT_TIME - START_TIME))
 
-    # ถ้าผ่านไปเท่ากับหรือเกินกว่า RUNTIME ให้หยุดการทำงานของ loop
+    # If the elapsed time is equal to or greater than RUNTIME, stop the loop
     if [ $ELAPSED_TIME -ge $RUNTIME_SECONDS ]; then
         echo "Test completed after $RUNTIME."
         sleep 5
@@ -73,5 +73,5 @@ while true; do
         break
     fi
 
-    sleep 5  # ตรวจสอบทุกๆ 10 วินาที
+    sleep 5  # Check every 5 seconds
 done

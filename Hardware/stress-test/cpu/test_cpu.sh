@@ -1,20 +1,19 @@
 #!/bin/bash
 
-# กำหนดชื่อไฟล์สำหรับผลลัพธ์
-RUNTIME="30"   # ระยะเวลาการรันทดสอบ
-TIMESTAMP=$(date +%Y%m%d_%H%M%S) # เพิ่ม timestamp เพื่อเก็บผลลัพธ์ที่ไม่ซ้ำกัน
+# Set the filename for the results
+RUNTIME="30"   # Duration of the test run
+TIMESTAMP=$(date +%Y%m%d_%H%M%S) # Add timestamp to ensure unique results
 OUTPUT_DIR=./output
-OUTPUT_FILE=${TIMESTAMP}_$(uname -n |sed 's/[^a-zA-Z0-9]/-/g')"_cpu_test_result.txt"
+OUTPUT_FILE=${TIMESTAMP}_$(uname -n | sed 's/[^a-zA-Z0-9]/-/g')"_cpu_test_result.txt"
 
-# คำนวณจำนวนคอร์ทั้งหมด
+# Calculate the total number of cores
 TOTAL_CORES=$(nproc)
-# คำนวณ 80% ของจำนวนคอร์ทั้งหมด
+# Calculate 80% of the total number of cores
 THREADS=$(echo "($TOTAL_CORES * 0.8)/1" | bc)
 
-
-# ฟังก์ชันในการเริ่มกระบวนการทดสอบ
+# Function to start the testing process
 start_sysbench() {
-    # ทดสอบ CPU
+    # Test CPU
     sysbench cpu --cpu-max-prime=20000 --time=$RUNTIME --threads=$THREADS run > $OUTPUT_DIR/cpu_$OUTPUT_FILE &
 }
 
@@ -24,9 +23,9 @@ create_output_dir() {
     fi
 }
 
-# ฟังก์ชันในการรวมผลลัพธ์
+# Function to collect the results
 collect_results() {
-    # สร้างชื่อไฟล์สำหรับผลลัพธ์ด้วย timestamp
+    # Create a filename for the final results with timestamp
     FINAL_OUTPUT_FILE="${OUTPUT_FILE%.*}.txt"
 
     echo "CPU Test Results:" >> $OUTPUT_DIR/$FINAL_OUTPUT_FILE
@@ -35,30 +34,30 @@ collect_results() {
     echo "Results saved to $OUTPUT_DIR/$FINAL_OUTPUT_FILE"
 }
 
-# เริ่มกระบวนการทดสอบ
+# Start the testing process
 create_output_dir
 start_sysbench
 
-# แปลงค่า RUNTIME เป็นวินาที
+# Convert RUNTIME to seconds
 RUNTIME_SECONDS=$(echo $RUNTIME | sed 's/s$//')
 
-# เวลาเริ่มต้น
+# Start time
 START_TIME=$(date +%s)
 
-# วนรอเพื่อดูว่ากระบวนการ `sysbench` ถูก kill หรือไม่ และเริ่มใหม่ถ้าจำเป็น
+# Loop to check if the `sysbench` process is killed and restart if necessary
 while true; do
-    # เช็คว่ามีการทำงานของ `sysbench` หรือไม่
+    # Check if the `sysbench` process is running
     if ! pgrep -x "sysbench" > /dev/null; then
         echo "sysbench process stopped. Restarting..."
         collect_results
         start_sysbench
     fi
 
-    # ตรวจสอบเวลาปัจจุบัน
+    # Check the current time
     CURRENT_TIME=$(date +%s)
     ELAPSED_TIME=$((CURRENT_TIME - START_TIME))
 
-    # ถ้าผ่านไปเท่ากับหรือเกินกว่า RUNTIME ให้หยุดการทำงานของ loop
+    # If the elapsed time is equal to or greater than RUNTIME, stop the loop
     if [ $ELAPSED_TIME -ge $RUNTIME_SECONDS ]; then
         echo "Test completed after $RUNTIME."
         sleep 5
@@ -66,5 +65,5 @@ while true; do
         break
     fi
 
-    sleep 5  # ตรวจสอบทุกๆ 5 วินาที
+    sleep 5  # Check every 5 seconds
 done
