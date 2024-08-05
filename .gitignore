@@ -1,5 +1,4 @@
-**/*.log
-**/*.txt
-**/*.csv
-**/output
+!Hardware/stress-test/gpu/requirements.txt
 **/*venv*
+**/output
+**/nohup.out
