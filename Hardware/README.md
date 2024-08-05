@@ -49,7 +49,7 @@ cd hdd
 #### Memory
 
 ```bash
-cd cpu
+cd memory
 ./test_mem.sh <TOTAL-DURATION-TIME-IN-SECONDS>
 ```
 
