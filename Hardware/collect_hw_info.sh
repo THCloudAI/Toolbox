@@ -70,17 +70,36 @@ get_pcie_info() {
     local pcie_info=$(lspci -nn -v | sort)
     local pcie_info_str=""
     while IFS= read -r line; do
-        if [[ "$line" == *"VGA"* || "$line" == *"3D controller"* ]]; then
-            pcie_info_str+="Graphics Card (GPU): $line; "
-        elif [[ "$line" == *"USB"* ]]; then
-            pcie_info_str+="USB Controller: $line; "
-        elif [[ "$line" == *"SATA"* || "$line" == *"IDE"* || "$line" == *"RAID"* || "$line" == *"Mass storage"* ]]; then
-            pcie_info_str+="Disk Controller: $line; "
-        else
-            pcie_info_str+="Other Device: $line; "
+        if [[ "$line" =~ ^[0-9a-fA-F]{2}:[0-9a-fA-F]{2}\.[0-9a-fA-F] ]]; then
+            bus_id=$(echo $line | awk '{print $1}')
+            device_info=$(lspci -nn -v -s $bus_id)
+            device_part_number=$(echo "$device_info" | grep -i "Subsystem:" | sed 's/^[[:space:]]*//')
+            device_type=""
+
+            if [[ "$line" == *"VGA"* || "$line" == *"3D controller"* ]]; then
+                device_type="Graphics Card (GPU)"
+            elif [[ "$line" == *"USB"* ]]; then
+                device_type="USB Controller"
+            elif [[ "$line" == *"SATA"* || "$line" == *"IDE"* || "$line" == *"RAID"* || "$line" == *"Mass storage"* ]]; then
+                device_type="Disk Controller"
+            elif [[ "$line" == *"Ethernet controller"* ]]; then
+                device_type="Network Controller"
+            elif [[ "$line" == *"Non-Volatile memory controller"* ]]; then
+                device_type="NVMe Controller"
+            else
+                device_type="Other Device"
+            fi
+
+            pcie_info_str+="$device_type: $line; "
+            if [ -n "$device_part_number" ]; then
+                pcie_info_str+="$device_part_number; "
+            else
+                pcie_info_str+="Part Number: Not available; "
+            fi
+            pcie_info_str+="\n"
         fi
     done <<< "$pcie_info"
-    echo "\"$pcie_info_str\""
+    echo -e "$pcie_info_str"
 }
 
 # Function to get power supply information
@@ -160,12 +179,33 @@ echo ""
 
 echo "PCIE Info:"
 sudo lspci -nn -v | while IFS= read -r line; do
-    if [[ "$line" == *"VGA"* || "$line" == *"3D controller"* ]]; then
-        echo "Graphics Card (GPU): $line"
-    elif [[ "$line" == *"USB"* ]]; then
-        echo "USB Controller: $line"
-    elif [[ "$line" == *"SATA"* || "$line" == *"IDE"* || "$line" == *"RAID"* || "$line" == *"Mass storage"* ]]; then
-        echo "Disk Controller: $line"
+    if [[ "$line" =~ ^[0-9a-fA-F]{2}:[0-9a-fA-F]{2}\.[0-9a-fA-F] ]]; then
+        bus_id=$(echo $line | awk '{print $1}')
+        device_info=$(lspci -nn -v -s $bus_id)
+        device_part_number=$(echo "$device_info" | grep -i "Subsystem:" | sed 's/^[[:space:]]*//')
+        device_type=""
+
+        if [[ "$line" == *"VGA"* || "$line" == *"3D controller"* ]]; then
+            device_type="Graphics Card (GPU)"
+        elif [[ "$line" == *"USB"* ]]; then
+            device_type="USB Controller"
+        elif [[ "$line" == *"SATA"* || "$line" == *"IDE"* || "$line" == *"RAID"* || "$line" == *"Mass storage"* ]]; then
+            device_type="Disk Controller"
+        elif [[ "$line" == *"Ethernet controller"* ]]; then
+            device_type="Network Controller"
+        elif [[ "$line" == *"Non-Volatile memory controller"* ]]; then
+            device_type="NVMe Controller"
+        else
+            device_type="Other Device"
+        fi
+
+        echo "$device_type: $line"
+        if [ -n "$device_part_number" ]; then
+            echo "$device_part_number"
+        else
+            echo "Part Number: Not available"
+        fi
+        echo ""
     fi
 done
 echo ""
