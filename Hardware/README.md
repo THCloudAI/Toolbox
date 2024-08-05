@@ -17,13 +17,13 @@ Check if executable files exist. If not , Install it
 
 ### stress test on devices
 
+TOTAL-DURATION-TIME-IN-SECONDS is 3600 second by default
+
 ```bash
 cd  stress-test
 ```
 
 #### CPU
-
-TOTAL-DURATION-TIME-IN-SECONDS is 3600 second
 
 ```bash
 cd cpu
@@ -31,8 +31,6 @@ cd cpu
 ```
 
 #### GPU
-
-TOTAL-DURATION-TIME-IN-SECONDS is 3600 second
 
 ```bash
 cd GPU
@@ -43,8 +41,6 @@ pip3 install -r requirements.txt
 
 #### HDD
 
-TOTAL-DURATION-TIME-IN-SECONDS is 3600s
-
 ```bash
 cd hdd
 ./test_hdd.sh <TOTAL-DURATION-TIME-IN-SECONDS>s
@@ -52,16 +48,12 @@ cd hdd
 
 #### Memory
 
-TOTAL-DURATION-TIME-IN-SECONDS is 3600 second
-
 ```bash
 cd cpu
 ./test_mem.sh <TOTAL-DURATION-TIME-IN-SECONDS>
 ```
 
 #### Network
-
-TOTAL-DURATION-TIME-IN-SECONDS is 3600 second
 
 ```bash
 cd network
